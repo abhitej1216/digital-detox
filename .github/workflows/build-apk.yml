@@ -37,7 +37,9 @@ jobs:
           /tmp/gradle-8.5/bin/gradle wrapper --gradle-version 8.5 --no-daemon
 
       - name: Build debug APK
-        run: ./gradlew assembleDebug --no-daemon
+        run: |
+          unset ANDROID_SDK_ROOT
+          ./gradlew assembleDebug --no-daemon
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
