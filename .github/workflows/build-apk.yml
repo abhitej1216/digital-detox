@@ -56,7 +56,7 @@ jobs:
           path: app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
 
-      - name: Create Release
+      - name: Create Release from Tag
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v1
         env:
@@ -65,12 +65,13 @@ jobs:
           files: app/build/outputs/apk/debug/app-debug.apk
           generate_release_notes: true
 
-      - name: Upload APK to Latest Release
+      - name: Update latest release
         if: github.ref == 'refs/heads/master'
-        uses: softprops/action-gh-release@v1
+        uses: peter-evans/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag-name: latest
           name: Latest Debug Build
           files: app/build/outputs/apk/debug/app-debug.apk
+          generate-release-notes: true
