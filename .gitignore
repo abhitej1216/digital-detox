@@ -58,3 +58,4 @@ build/
 
 # NDK
 obj/
+.idea/
