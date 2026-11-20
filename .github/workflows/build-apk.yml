@@ -22,10 +22,6 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Unset pre-installed SDK paths
-        run: |
-          unset ANDROID_SDK_ROOT
-
       - name: Install Android SDK
         run: |
           mkdir -p $ANDROID_HOME/cmdline-tools
@@ -34,10 +30,14 @@ jobs:
           cd $ANDROID_HOME/cmdline-tools/cmdline-tools && yes | ./bin/sdkmanager --licenses
           ./bin/sdkmanager --install "platforms;android-34" "build-tools;34.0.0"
 
-      - name: Build debug APK
+      - name: Install Gradle and generate wrapper
         run: |
-          unset ANDROID_SDK_ROOT
-          ./gradlew assembleDebug --no-daemon
+          curl -SL "https://services.gradle.org/distributions/gradle-8.5-bin.zip" -o /tmp/gradle.zip
+          unzip -q /tmp/gradle.zip -d /tmp
+          /tmp/gradle-8.5/bin/gradle wrapper --gradle-version 8.5 --no-daemon
+
+      - name: Build debug APK
+        run: ./gradlew assembleDebug --no-daemon
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
