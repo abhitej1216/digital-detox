@@ -22,31 +22,15 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Install Android command-line tools
-        run: |
-          mkdir -p "$ANDROID_HOME"
-          curl -SL "https://dl.google.com/android/repository/commandlinetools-linux-15859902_latest.zip" -o /tmp/cmdline-tools.zip
-          unzip -q -o /tmp/cmdline-tools.zip -d "$ANDROID_HOME"
-          chmod +x "$ANDROID_HOME/cmdline-tools/bin/sdkmanager"
-
-      - name: Accept Android SDK licenses
-        run: echo "y" | yes | "$ANDROID_HOME/cmdline-tools/bin/sdkmanager" --licenses --sdk_root="$ANDROID_HOME" 2>/dev/null || true
-
-      - name: Install Android SDK packages
-        run: "$ANDROID_HOME/cmdline-tools/bin/sdkmanager" --install "platforms;android-34" "build-tools;34.0.0" --sdk_root="$ANDROID_HOME"
+      - name: Install Android SDK
+        uses: android-actions/setup-android@v2
+        with:
+          api-level: 34
+          build-tools: '34.0.0'
+          ndk: false
 
       - name: Grant execute permission for Gradle wrapper
         run: chmod +x ./gradlew
-
-      - name: Cache Gradle dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches/modules-2
-            ~/.gradle/caches/wrapper-6
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle.kts', '**/gradle.properties', 'gradle/wrapper/gradle-wrapper.properties') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
 
       - name: Build debug APK
         run: ./gradlew assembleDebug --no-daemon
