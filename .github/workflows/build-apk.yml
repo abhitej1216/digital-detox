@@ -22,6 +22,10 @@ jobs:
           distribution: temurin
           java-version: '17'
 
+      - name: Unset pre-installed SDK paths
+        run: |
+          unset ANDROID_SDK_ROOT
+
       - name: Install Android SDK
         run: |
           mkdir -p $ANDROID_HOME/cmdline-tools
@@ -30,18 +34,9 @@ jobs:
           cd $ANDROID_HOME/cmdline-tools/cmdline-tools && yes | ./bin/sdkmanager --licenses
           ./bin/sdkmanager --install "platforms;android-34" "build-tools;34.0.0"
 
-      - name: Download Gradle
-        run: |
-          curl -SL "https://services.gradle.org/distributions/gradle-8.5-bin.zip" -o /tmp/gradle.zip
-          unzip -q /tmp/gradle.zip -d /tmp
-          export GRADLE_HOME=/tmp/gradle-8.5
-          export PATH=$GRADLE_HOME/bin:$PATH
-
       - name: Build debug APK
         run: |
-          export GRADLE_HOME=/tmp/gradle-8.5
-          export PATH=$GRADLE_HOME/bin:$PATH
-          gradle wrapper --gradle-version 8.5 --no-daemon
+          unset ANDROID_SDK_ROOT
           ./gradlew assembleDebug --no-daemon
 
       - name: Upload APK artifact
