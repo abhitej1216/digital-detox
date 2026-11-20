@@ -19,21 +19,6 @@ android {
         vectorDrawables.useSupportLibrary = true
     }
 
-    signingConfigs {
-        create("release") {
-            val keystorePath = System.getenv("RELEASE_KEYSTORE_PATH")
-            val storePass = System.getenv("RELEASE_STOREPASS")
-            val keyPass = System.getenv("RELEASE_KEYPASS")
-            val keyAlias = System.getenv("RELEASE_KEY_ALIAS") ?: "digitaldetox"
-            if (keystorePath != null && storePass != null && keyPass != null) {
-                storeFile = file(keystorePath)
-                storePassword = storePass
-                this.keyAlias = keyAlias
-                this.keyPassword = keyPass
-            }
-        }
-    }
-
     buildFeatures {
         compose = true
     }
@@ -55,17 +40,6 @@ android {
 
     kotlinOptions {
         jvmTarget = "17"
-    }
-
-    buildTypes {
-        release {
-            isMinifyEnabled = true
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
-            signingConfig = signingConfigs.getByName("release")
-        }
     }
 }
 

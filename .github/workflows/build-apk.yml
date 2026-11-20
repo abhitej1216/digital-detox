@@ -13,10 +13,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
       ANDROID_HOME: /opt/android-sdk
-      RELEASE_KEYSTORE_PATH: /tmp/keystore/digitaldetox.keystore
-      RELEASE_STOREPASS: ${{ secrets.RELEASE_STOREPASS }}
-      RELEASE_KEYPASS: ${{ secrets.RELEASE_KEYPASS }}
-      RELEASE_KEY_ALIAS: digitaldetox
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -41,36 +37,23 @@ jobs:
           unzip -q /tmp/gradle.zip -d /tmp
           /tmp/gradle-8.5/bin/gradle wrapper --gradle-version 8.5 --no-daemon
 
-      - name: Generate release keystore
-        run: |
-          mkdir -p /tmp/keystore
-          keytool -genkey -v \
-            -keystore $RELEASE_KEYSTORE_PATH \
-            -storepass "$RELEASE_STOREPASS" \
-            -keypass "$RELEASE_KEYPASS" \
-            -alias digitaldetox \
-            -keyalg RSA \
-            -keysize 2048 \
-            -validity 10000 \
-            -dname "CN=Digital Detox,OU=Digital Detox,O=Digital Detox,L=Unknown,ST=Unknown,C=US"
-
-      - name: Build release APK
+      - name: Build debug APK
         run: |
           unset ANDROID_SDK_ROOT
-          ./gradlew assembleRelease --no-daemon
+          ./gradlew assembleDebug --no-daemon
 
       - name: Rename APK
         id: rename
         run: |
           APP_VERSION=$(grep versionName app/build.gradle.kts | sed -E 's/.*versionName *= *"([^"]+)".*/\1/')
-          cp app/build/outputs/apk/release/app-release.apk app/build/outputs/apk/release/digital-detox-${APP_VERSION}.apk
-          echo "apk_path=app/build/outputs/apk/release/digital-detox-${APP_VERSION}.apk" >> $GITHUB_OUTPUT
+          cp app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/digital-detox-${APP_VERSION}.apk
+          echo "apk_path=app/build/outputs/apk/debug/digital-detox-${APP_VERSION}.apk" >> $GITHUB_OUTPUT
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: app-release-apk
-          path: app/build/outputs/apk/release/app-release.apk
+          name: app-debug-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
 
       - name: Create Release
@@ -79,7 +62,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          files: app/build/outputs/apk/release/app-release.apk
+          files: app/build/outputs/apk/debug/app-debug.apk
           generate_release_notes: true
 
       - name: Upload APK to Latest Release
@@ -89,5 +72,5 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag-name: latest
-          name: Latest Release Build
-          files: app/build/outputs/apk/release/app-release.apk
+          name: Latest Debug Build
+          files: app/build/outputs/apk/debug/app-debug.apk
