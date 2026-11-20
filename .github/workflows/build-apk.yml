@@ -11,7 +11,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_HOME: /opt/android-sdk
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -23,11 +23,13 @@ jobs:
           java-version: '17'
 
       - name: Install Android SDK
-        uses: android-actions/setup-android@v2
-        with:
-          api-level: 34
-          build-tools: '34.0.0'
-          ndk: false
+        run: |
+          mkdir -p $ANDROID_HOME/cmdline-tools
+          curl -SL "https://dl.google.com/android/repository/commandlinetools-linux-15859902_latest.zip" -o /tmp/cmdline-tools.zip
+          unzip -q -o /tmp/cmdline-tools.zip -d $ANDROID_HOME/cmdline-tools
+          mkdir -p $ANDROID_HOME/platforms
+          mkdir -p $ANDROID_HOME/build-tools
+          $ANDROID_HOME/cmdline-tools/cmdline-tools/bin/sdkmanager --install "platforms;android-34" "build-tools;34.0.0" --sdk_root=$ANDROID_HOME
 
       - name: Grant execute permission for Gradle wrapper
         run: chmod +x ./gradlew
