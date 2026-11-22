@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.0] - 2026-11-22
+
+### Added
+- **Micro-Sessions & Mandatory Cooldown Windows (Anti-Doomscroll Engine)**:
+  - `MindfulInterventionManager`: Added session timing, mandatory cooldown tracking, and daily open quota limits per package.
+  - `CooldownActivity` & `CooldownScreen`: Dedicated cooldown screen with live circular countdown timer, dopamine reset guidance, daily opens counter, and return-to-home action.
+  - Active session watchdog in `AppBlockingService`: Automatically pulls the user out of the app and triggers the Cooldown screen when their micro-session expires.
+  - `SettingsScreen`: Added configuration controls for:
+    - Micro-Session Length (3m, 5m, 10m, 15m)
+    - Mandatory Cooldown Duration (15m, 30m, 45m, 60m)
+    - Daily Opens Limit (3, 5, 8, 10 opens/day)
+  - `DashboardScreen`: Added Anti-Doomscroll Engine status card.
+
 ## [0.3.0] - 2026-11-22
 
 ### Added
@@ -9,7 +22,6 @@ All notable changes to this project will be documented in this file.
   - Implemented `MindfulInterventionActivity` and `MindfulInterventionScreen` providing a 10-second guided breathing exercise upon launching blocked apps (Inhale 4s -> Hold 2s -> Exhale 4s).
   - Concentric animated aura rings with phase-synced haptics and live countdown progress.
   - Intentional decision state: "I don't need this right now" (Mindful Save) vs "Open for 5 minutes only" (intentional quota).
-  - `MindfulInterventionManager`: Thread-safe temporary access manager for short 5-minute passes.
   - `SettingsScreen`: Added One Sec toggle & "Preview Mindful Breathing Exercise" button.
   - `DashboardScreen`: Added live "Mindful Saves" counter tracking avoided distractions.
 

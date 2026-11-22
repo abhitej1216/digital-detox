@@ -35,6 +35,10 @@ class SettingsViewModel @Inject constructor(
     private fun loadSettings() {
         viewModelScope.launch {
             val oneSecEnabled = repository.getBoolean("one_sec_enabled", true)
+            val microSessionMinutes = repository.getInt("micro_session_minutes", 5)
+            val cooldownMinutes = repository.getInt("cooldown_minutes", 30)
+            val dailyOpenLimit = repository.getInt("daily_open_limit", 5)
+
             val nightMode = repository.getBoolean("night_mode", false)
             val studyTarget = repository.getInt("study_target", 120)
             val workTarget = repository.getInt("work_target", 240)
@@ -45,6 +49,9 @@ class SettingsViewModel @Inject constructor(
             _uiState.update {
                 it.copy(
                     oneSecEnabled = oneSecEnabled,
+                    microSessionMinutes = microSessionMinutes,
+                    cooldownMinutes = cooldownMinutes,
+                    dailyOpenLimit = dailyOpenLimit,
                     nightMode = nightMode,
                     studyTarget = studyTarget.toString(),
                     workTarget = workTarget.toString(),
@@ -60,6 +67,21 @@ class SettingsViewModel @Inject constructor(
     fun onOneSecEnabledChanged(enabled: Boolean) {
         _uiState.update { it.copy(oneSecEnabled = enabled) }
         viewModelScope.launch { repository.saveBoolean("one_sec_enabled", enabled) }
+    }
+
+    fun onMicroSessionMinutesChanged(minutes: Int) {
+        _uiState.update { it.copy(microSessionMinutes = minutes) }
+        viewModelScope.launch { repository.saveInt("micro_session_minutes", minutes) }
+    }
+
+    fun onCooldownMinutesChanged(minutes: Int) {
+        _uiState.update { it.copy(cooldownMinutes = minutes) }
+        viewModelScope.launch { repository.saveInt("cooldown_minutes", minutes) }
+    }
+
+    fun onDailyOpenLimitChanged(limit: Int) {
+        _uiState.update { it.copy(dailyOpenLimit = limit) }
+        viewModelScope.launch { repository.saveInt("daily_open_limit", limit) }
     }
 
     fun onNightModeChanged(enabled: Boolean) {
@@ -94,6 +116,9 @@ class SettingsViewModel @Inject constructor(
 
 data class SettingsUiState(
     val oneSecEnabled: Boolean = true,
+    val microSessionMinutes: Int = 5,
+    val cooldownMinutes: Int = 30,
+    val dailyOpenLimit: Int = 5,
     val nightMode: Boolean = false,
     val studyTarget: String = "120",
     val workTarget: String = "240",

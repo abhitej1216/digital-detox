@@ -324,6 +324,47 @@ fun DashboardScreen(
                     }
                 }
 
+                // Anti-Doomscroll Engine: Micro-Sessions & Cooldown Status
+                CraftCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    backgroundColor = MaterialTheme.colorScheme.surface
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+                            Text(
+                                text = "ANTI-DOOMSCROLL ENGINE",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color(0xFFF59E0B),
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 1.sp
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "Micro-Sessions & Cooldowns",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "Apps auto-close after intentional use and enter mandatory cooldown for dopamine reset.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+
+                        CraftPillBadge(
+                            text = "Active",
+                            indicatorColor = Color(0xFFF59E0B),
+                            containerColor = Color(0xFFF59E0B).copy(alpha = 0.15f)
+                        )
+                    }
+                }
+
                 // Mindful Saves Metric Card (One Sec Intervention Result)
                 CraftCard(
                     modifier = Modifier.fillMaxWidth(),

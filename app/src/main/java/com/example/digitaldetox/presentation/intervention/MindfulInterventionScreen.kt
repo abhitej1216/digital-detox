@@ -61,6 +61,14 @@ fun MindfulInterventionScreen(
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
 
+    var microSessionMinutes by remember { mutableIntStateOf(5) }
+    var cooldownMinutes by remember { mutableIntStateOf(30) }
+
+    LaunchedEffect(Unit) {
+        microSessionMinutes = settingsRepository.getInt("micro_session_minutes", 5)
+        cooldownMinutes = settingsRepository.getInt("cooldown_minutes", 30)
+    }
+
     // Determine current breathing phase based on elapsed seconds
     // 0-4s: Inhale (4s)
     // 4-6s: Hold (2s)
@@ -307,14 +315,18 @@ fun MindfulInterventionScreen(
                             )
                         }
 
-                        // Option 2: "Continue for 5 minutes only"
+                        // Option 2: "Continue for X minutes only" (Micro-Session Window)
                         OutlinedButton(
                             onClick = {
                                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                MindfulInterventionManager.grantTemporaryAccess(packageName, durationMinutes = 5)
+                                MindfulInterventionManager.startMicroSession(
+                                    packageName = packageName,
+                                    sessionMinutes = microSessionMinutes,
+                                    cooldownMinutes = cooldownMinutes
+                                )
                                 Toast.makeText(
                                     context,
-                                    "5-minute mindful pass granted for $appLabel.",
+                                    "$microSessionMinutes-min micro-session started ($cooldownMinutes-min cooldown after).",
                                     Toast.LENGTH_SHORT
                                 ).show()
                                 onLaunchApp()
@@ -330,7 +342,7 @@ fun MindfulInterventionScreen(
                             )
                         ) {
                             Text(
-                                text = "Open for 5 minutes only",
+                                text = "Open for $microSessionMinutes minutes only",
                                 style = MaterialTheme.typography.labelLarge,
                                 fontWeight = FontWeight.SemiBold,
                                 color = MaterialTheme.colorScheme.onSurface
