@@ -6,6 +6,7 @@ import android.view.accessibility.AccessibilityEvent
 import android.widget.Toast
 import com.example.digitaldetox.data.repository.AppRepository
 import com.example.digitaldetox.data.repository.SettingsRepository
+import com.example.digitaldetox.presentation.intervention.MindfulInterventionActivity
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -27,6 +28,10 @@ class AppBlockingService : AccessibilityService() {
     private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private var blockedPackageNames: Set<String> = emptySet()
     private var isNightModeEnabled: Boolean = false
+    private var isOneSecEnabled: Boolean = true
+
+    private var lastInterceptedPackage: String? = null
+    private var lastInterceptTime: Long = 0L
 
     override fun onServiceConnected() {
         super.onServiceConnected()
@@ -43,6 +48,11 @@ class AppBlockingService : AccessibilityService() {
                 isNightModeEnabled = enabled
             }
         }
+        serviceScope.launch {
+            settingsRepository.getBooleanFlow("one_sec_enabled", true).collect { enabled ->
+                isOneSecEnabled = enabled
+            }
+        }
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
@@ -52,6 +62,17 @@ class AppBlockingService : AccessibilityService() {
             val packageName = event.packageName.toString()
             if (packageName == this.packageName) return
 
+            // Avoid redundant rapid events within 1.5 seconds for the same package
+            val now = System.currentTimeMillis()
+            if (packageName == lastInterceptedPackage && (now - lastInterceptTime) < 1500L) {
+                return
+            }
+
+            // Check if user has an active 5-minute temporary mindful pass
+            if (MindfulInterventionManager.hasTemporaryAccess(packageName)) {
+                return
+            }
+
             val currentHour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
             val isNightTime = currentHour >= 22 || currentHour < 7
 
@@ -60,19 +81,29 @@ class AppBlockingService : AccessibilityService() {
             val isNonSystemApp = !isSystemApp(packageName)
 
             if (isUserBlocked || (isNightModeActive && isNonSystemApp)) {
-                performGlobalAction(GLOBAL_ACTION_HOME)
+                lastInterceptedPackage = packageName
+                lastInterceptTime = now
+
                 val appLabel = try {
                     val appInfo = packageManager.getApplicationInfo(packageName, 0)
                     packageManager.getApplicationLabel(appInfo).toString()
                 } catch (e: Exception) {
                     packageName
                 }
-                val toastMessage = if (isNightModeActive && isNonSystemApp && !isUserBlocked) {
-                    "$appLabel is blocked during Nighttime Detox!"
+
+                if (isOneSecEnabled) {
+                    // One Sec Mindful Guided Intervention
+                    MindfulInterventionActivity.start(this, packageName, appLabel)
                 } else {
-                    "$appLabel is currently blocked by Digital Detox!"
+                    // Standard abrupt block
+                    performGlobalAction(GLOBAL_ACTION_HOME)
+                    val toastMessage = if (isNightModeActive && isNonSystemApp && !isUserBlocked) {
+                        "$appLabel is blocked during Nighttime Detox!"
+                    } else {
+                        "$appLabel is currently blocked by Digital Detox!"
+                    }
+                    Toast.makeText(this, toastMessage, Toast.LENGTH_SHORT).show()
                 }
-                Toast.makeText(this, toastMessage, Toast.LENGTH_SHORT).show()
             }
         }
     }

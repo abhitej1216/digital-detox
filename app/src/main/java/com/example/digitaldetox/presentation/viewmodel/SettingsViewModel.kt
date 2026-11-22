@@ -34,6 +34,7 @@ class SettingsViewModel @Inject constructor(
 
     private fun loadSettings() {
         viewModelScope.launch {
+            val oneSecEnabled = repository.getBoolean("one_sec_enabled", true)
             val nightMode = repository.getBoolean("night_mode", false)
             val studyTarget = repository.getInt("study_target", 120)
             val workTarget = repository.getInt("work_target", 240)
@@ -43,6 +44,7 @@ class SettingsViewModel @Inject constructor(
 
             _uiState.update {
                 it.copy(
+                    oneSecEnabled = oneSecEnabled,
                     nightMode = nightMode,
                     studyTarget = studyTarget.toString(),
                     workTarget = workTarget.toString(),
@@ -53,6 +55,11 @@ class SettingsViewModel @Inject constructor(
                 )
             }
         }
+    }
+
+    fun onOneSecEnabledChanged(enabled: Boolean) {
+        _uiState.update { it.copy(oneSecEnabled = enabled) }
+        viewModelScope.launch { repository.saveBoolean("one_sec_enabled", enabled) }
     }
 
     fun onNightModeChanged(enabled: Boolean) {
@@ -86,6 +93,7 @@ class SettingsViewModel @Inject constructor(
 }
 
 data class SettingsUiState(
+    val oneSecEnabled: Boolean = true,
     val nightMode: Boolean = false,
     val studyTarget: String = "120",
     val workTarget: String = "240",

@@ -12,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -32,6 +33,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.example.digitaldetox.presentation.intervention.MindfulInterventionActivity
 import com.example.digitaldetox.presentation.viewmodel.SettingsViewModel
 import com.example.digitaldetox.ui.components.AnimatedSegmentedControl
 import com.example.digitaldetox.ui.components.CraftCard
@@ -73,7 +75,7 @@ fun SettingsScreen(
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = "Tune blocking behavior & daily goals",
+                            text = "Tune blocking behavior & mindful habits",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -108,7 +110,7 @@ fun SettingsScreen(
             ) {
                 // Section 1: Protection & Enforcement
                 Text(
-                    text = "ENFORCEMENT RULES",
+                    text = "MINDFUL INTERVENTIONS",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Bold,
@@ -117,6 +119,70 @@ fun SettingsScreen(
 
                 CraftCard(modifier = Modifier.fillMaxWidth()) {
                     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                        // "One Sec" Mindful Intervention Switch
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Text(
+                                        text = "One Sec Breath Intercept",
+                                        style = MaterialTheme.typography.titleSmall,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                    CraftPillBadge(text = "Recommended", indicatorColor = MaterialTheme.colorScheme.primary)
+                                }
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = "Replaces hard blocks with a 10s guided breathing exercise to break impulsive habit loops.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            Switch(
+                                checked = uiState.oneSecEnabled,
+                                onCheckedChange = {
+                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    viewModel.onOneSecEnabledChanged(it)
+                                },
+                                colors = SwitchDefaults.colors(
+                                    checkedTrackColor = MaterialTheme.colorScheme.primary,
+                                    checkedThumbColor = MaterialTheme.colorScheme.onPrimary
+                                )
+                            )
+                        }
+
+                        // Preview One Sec Button
+                        OutlinedButton(
+                            onClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                MindfulInterventionActivity.start(context, "preview", "Distracting App")
+                            },
+                            shape = CircleShape,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .tactilePress(scale = 0.97f),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.PlayArrow,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Preview Mindful Breathing Exercise", style = MaterialTheme.typography.labelMedium)
+                        }
+
+                        HorizontalDivider(
+                            color = MaterialTheme.colorScheme.outlineVariant,
+                            thickness = 0.8.dp
+                        )
+
                         // Strict Unblock Protection Switch
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -131,7 +197,7 @@ fun SettingsScreen(
                                 )
                                 Spacer(modifier = Modifier.height(2.dp))
                                 Text(
-                                    text = "Requires a 30s cool-down & math problem before any blocked app opens.",
+                                    text = "Requires a math challenge when manually unblocking apps in Limits.",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -168,7 +234,7 @@ fun SettingsScreen(
                                 )
                                 Spacer(modifier = Modifier.height(2.dp))
                                 Text(
-                                    text = "Enforce stricter restrictions during evening hours for sound sleep.",
+                                    text = "Enforce stricter restrictions between 10 PM and 7 AM for sound sleep.",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )

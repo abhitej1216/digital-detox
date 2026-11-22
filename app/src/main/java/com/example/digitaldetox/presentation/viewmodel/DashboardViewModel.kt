@@ -55,6 +55,8 @@ class DashboardViewModel @Inject constructor(
                 0
             }
 
+            val mindfulSavesCount = settingsRepository.getInt("mindful_saves_count", 0)
+
             _uiState.update {
                 it.copy(
                     hasPermission = hasPermission,
@@ -63,6 +65,7 @@ class DashboardViewModel @Inject constructor(
                     totalFocusTime = if (hasPermission && actualUsageMinutes > 0) actualUsageMinutes else focusTime,
                     totalAppUsageTime = actualUsageMinutes,
                     goalProgress = goalProgress,
+                    mindfulSavesCount = mindfulSavesCount,
                     isLoading = false
                 )
             }
@@ -85,6 +88,7 @@ data class DashboardUiState(
     val workTime: Int = 0,
     val totalAppUsageTime: Int = 0,
     val goalProgress: Float = 0f,
+    val mindfulSavesCount: Int = 0,
     val hasPermission: Boolean = false,
     val isLoading: Boolean = true
 )

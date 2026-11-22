@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.0] - 2026-11-22
+
+### Added
+- **"One Sec" Mindful Intervention Engine**:
+  - Implemented `MindfulInterventionActivity` and `MindfulInterventionScreen` providing a 10-second guided breathing exercise upon launching blocked apps (Inhale 4s -> Hold 2s -> Exhale 4s).
+  - Concentric animated aura rings with phase-synced haptics and live countdown progress.
+  - Intentional decision state: "I don't need this right now" (Mindful Save) vs "Open for 5 minutes only" (intentional quota).
+  - `MindfulInterventionManager`: Thread-safe temporary access manager for short 5-minute passes.
+  - `SettingsScreen`: Added One Sec toggle & "Preview Mindful Breathing Exercise" button.
+  - `DashboardScreen`: Added live "Mindful Saves" counter tracking avoided distractions.
+
 ## [0.2.0] - 2026-11-22
 
 ### Added / Redesigned (Emil Kowalski Design Engineering Principles)

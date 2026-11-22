@@ -36,6 +36,14 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".presentation.intervention.MindfulInterventionActivity"
+            android:exported="false"
+            android:launchMode="singleTask"
+            android:theme="@style/Theme.DigitalDetox"
+            android:excludeFromRecents="true"
+            android:noHistory="true" />
+
         <service
             android:name=".service.AppBlockingService"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
