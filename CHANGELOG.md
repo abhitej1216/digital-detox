@@ -1,20 +1,24 @@
-# Changelog
+# Changelog — Digital Detox
 
-All notable changes to the Digital Detox project will be documented in this file.
+All notable changes to this project will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
+## [0.2.0] - 2026-11-22
 
-## [0.1.0] — 2026-11-18
-
-### Added
-
-- Project foundation: MVVM + Clean Architecture structure.
-- Documentation: README.md, ARCHITECTURE.md, PROJECT_STATUS.md.
-- Analysis of Android app-blocking mechanisms.
-- Room database schema definition with 5 entities.
-- DataStore preferences foundation.
-- Jetpack Compose theme structure (colors, typography, shapes).
-- Navigation graph with 6 core screens defined.
-- Core UI screens: HomeDashboard, FocusTimer, BlockedApps, Settings.
-- Domain models for focus goals, sessions, and restrictions.
-- Use case definitions for blocking and tracking logic.
+### Added / Redesigned (Emil Kowalski Design Engineering Principles)
+- **Design System & Motion**:
+  - Implemented `tactilePress(scale = 0.96f)` with physical spring dynamics and haptic ticks on button touch down.
+  - Symmetrical Apple-grade screen transitions: `scaleIn(0.96f) + fadeIn(220ms)` and `scaleOut(0.96f) + fadeOut(160ms)`. Never scaling from zero.
+  - Deep obsidian dark palette (`#090A0D`), soothing emerald detox accents (`#10B981`), and subtle 1dp hairline borders (`#2D323E`).
+- **Floating Dock Navigation**:
+  - Floating pill navigation bar with spring-animated indicator capsules.
+- **Precision Focus Timer**:
+  - Dual-layer circular progress canvas ring with gentle ambient breathing motion when running.
+  - Monospace tabular timer digits (`24:59`) with quick duration selector chips (`15m`, `25m`, `45m`, `60m`).
+  - Fluid segmented control to alternate between Study and Work sessions.
+- **Overview Dashboard**:
+  - Visual circular progress gauge and goal progress bar.
+  - Side-by-side metric cards for Study and Work.
+  - Frosted action-required cards with tactile buttons.
+- **App Guard & Mindful Challenge**:
+  - Rounded search bar and segmented tab filter.
+  - Unblock challenge dialog with animated countdown gauge, math challenge card, and intentional friction.
