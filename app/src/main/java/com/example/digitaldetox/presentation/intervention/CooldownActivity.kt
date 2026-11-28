@@ -28,6 +28,7 @@ class CooldownActivity : ComponentActivity() {
         val isDailyLimit = intent.getBooleanExtra(EXTRA_IS_DAILY_LIMIT, false)
 
         lifecycleScope.launch {
+            val microSessionMinutes = settingsRepository.getInt("micro_session_minutes", 5)
             val cooldownMinutes = settingsRepository.getInt("cooldown_minutes", 30)
             val dailyLimit = settingsRepository.getInt("daily_open_limit", 5)
 
@@ -37,6 +38,7 @@ class CooldownActivity : ComponentActivity() {
                         packageName = packageName,
                         appLabel = appLabel,
                         isDailyLimit = isDailyLimit,
+                        microSessionMinutes = microSessionMinutes,
                         cooldownTotalMinutes = cooldownMinutes,
                         dailyLimit = dailyLimit,
                         onCloseToHome = {

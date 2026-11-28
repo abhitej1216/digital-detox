@@ -1,5 +1,7 @@
 package com.example.digitaldetox.service
 
+import android.content.Context
+import android.content.SharedPreferences
 import java.util.Calendar
 import java.util.concurrent.ConcurrentHashMap
 
@@ -19,10 +21,38 @@ data class MicroSessionState(
 
 /**
  * Manages Micro-Sessions, Mandatory Cooldown Windows, and Daily Open Limits per app.
+ * Persists state to SharedPreferences when initialized so cooldowns & quotas survive process restarts.
  */
 object MindfulInterventionManager {
 
+    private const val PREFS_NAME = "mindful_intervention_prefs"
     private val sessionsMap = ConcurrentHashMap<String, MicroSessionState>()
+
+    @Volatile
+    private var prefs: SharedPreferences? = null
+
+    @Volatile
+    private var isInitialized = false
+
+    @Synchronized
+    fun init(context: Context) {
+        if (isInitialized) return
+        val appPrefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs = appPrefs
+
+        val now = System.currentTimeMillis()
+        appPrefs.all.forEach { (packageName, rawValue) ->
+            val serialized = rawValue as? String ?: return@forEach
+            val parsed = deserialize(serialized) ?: return@forEach
+            // Retain entries that still have an active window or belong to today
+            if (now < parsed.cooldownUntil || isSameDay(parsed.lastOpenDateMillis, now)) {
+                sessionsMap[packageName] = parsed
+            } else {
+                appPrefs.edit().remove(packageName).apply()
+            }
+        }
+        isInitialized = true
+    }
 
     /**
      * Checks the current access status for [packageName].
@@ -75,12 +105,14 @@ object MindfulInterventionManager {
         val sessionExpiresAt = now + sessionDurationMs
         val cooldownExpiresAt = sessionExpiresAt + cooldownDurationMs
 
-        sessionsMap[packageName] = MicroSessionState(
+        val newState = MicroSessionState(
             activeSessionUntil = sessionExpiresAt,
             cooldownUntil = cooldownExpiresAt,
             dailyOpensCount = newDailyCount,
             lastOpenDateMillis = now
         )
+        sessionsMap[packageName] = newState
+        prefs?.edit()?.putString(packageName, serialize(newState))?.apply()
     }
 
     /**
@@ -92,12 +124,19 @@ object MindfulInterventionManager {
     }
 
     /**
+     * Returns remaining active session time in milliseconds.
+     */
+    fun getRemainingSessionMillis(packageName: String): Long {
+        val current = sessionsMap[packageName] ?: return 0L
+        val diff = current.activeSessionUntil - System.currentTimeMillis()
+        return if (diff > 0) diff else 0L
+    }
+
+    /**
      * Returns remaining active session time in seconds.
      */
     fun getRemainingSessionSeconds(packageName: String): Long {
-        val current = sessionsMap[packageName] ?: return 0L
-        val diff = current.activeSessionUntil - System.currentTimeMillis()
-        return if (diff > 0) diff / 1000L else 0L
+        return getRemainingSessionMillis(packageName) / 1000L
     }
 
     /**
@@ -106,7 +145,7 @@ object MindfulInterventionManager {
     fun getRemainingCooldownSeconds(packageName: String): Long {
         val current = sessionsMap[packageName] ?: return 0L
         val diff = current.cooldownUntil - System.currentTimeMillis()
-        return if (diff > 0) diff / 1000L else 0L
+        return if (diff > 0) (diff + 999L) / 1000L else 0L
     }
 
     /**
@@ -131,6 +170,22 @@ object MindfulInterventionManager {
      */
     fun revokeAccess(packageName: String) {
         sessionsMap.remove(packageName)
+        prefs?.edit()?.remove(packageName)?.apply()
+    }
+
+    private fun serialize(state: MicroSessionState): String {
+        return "${state.activeSessionUntil},${state.cooldownUntil},${state.dailyOpensCount},${state.lastOpenDateMillis}"
+    }
+
+    private fun deserialize(raw: String): MicroSessionState? {
+        val parts = raw.split(',')
+        if (parts.size != 4) return null
+        return MicroSessionState(
+            activeSessionUntil = parts[0].toLongOrNull() ?: return null,
+            cooldownUntil = parts[1].toLongOrNull() ?: return null,
+            dailyOpensCount = parts[2].toIntOrNull() ?: return null,
+            lastOpenDateMillis = parts[3].toLongOrNull() ?: return null
+        )
     }
 
     private fun isSameDay(time1: Long, time2: Long): Boolean {

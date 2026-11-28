@@ -65,6 +65,10 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun onOneSecEnabledChanged(enabled: Boolean) {
+        if (!enabled && _uiState.value.strictUnblockProtection) {
+            _uiState.update { it.copy(pendingProtectionChange = PendingProtectionChange.DISABLE_ONE_SEC) }
+            return
+        }
         _uiState.update { it.copy(oneSecEnabled = enabled) }
         viewModelScope.launch { repository.saveBoolean("one_sec_enabled", enabled) }
     }
@@ -85,13 +89,44 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun onNightModeChanged(enabled: Boolean) {
+        if (!enabled && _uiState.value.strictUnblockProtection) {
+            _uiState.update { it.copy(pendingProtectionChange = PendingProtectionChange.DISABLE_NIGHT_MODE) }
+            return
+        }
         _uiState.update { it.copy(nightMode = enabled) }
         viewModelScope.launch { repository.saveBoolean("night_mode", enabled) }
     }
 
     fun onStrictUnblockProtectionChanged(enabled: Boolean) {
+        if (!enabled && _uiState.value.strictUnblockProtection) {
+            _uiState.update { it.copy(pendingProtectionChange = PendingProtectionChange.DISABLE_STRICT_BARRIER) }
+            return
+        }
         _uiState.update { it.copy(strictUnblockProtection = enabled) }
         viewModelScope.launch { repository.saveBoolean("strict_unblock_protection", enabled) }
+    }
+
+    fun confirmPendingProtectionChange() {
+        val pending = _uiState.value.pendingProtectionChange ?: return
+        _uiState.update { it.copy(pendingProtectionChange = null) }
+        when (pending) {
+            PendingProtectionChange.DISABLE_STRICT_BARRIER -> {
+                _uiState.update { it.copy(strictUnblockProtection = false) }
+                viewModelScope.launch { repository.saveBoolean("strict_unblock_protection", false) }
+            }
+            PendingProtectionChange.DISABLE_ONE_SEC -> {
+                _uiState.update { it.copy(oneSecEnabled = false) }
+                viewModelScope.launch { repository.saveBoolean("one_sec_enabled", false) }
+            }
+            PendingProtectionChange.DISABLE_NIGHT_MODE -> {
+                _uiState.update { it.copy(nightMode = false) }
+                viewModelScope.launch { repository.saveBoolean("night_mode", false) }
+            }
+        }
+    }
+
+    fun dismissPendingProtectionChange() {
+        _uiState.update { it.copy(pendingProtectionChange = null) }
     }
 
     fun onStudyTargetChanged(target: String) {
@@ -114,6 +149,12 @@ class SettingsViewModel @Inject constructor(
     }
 }
 
+enum class PendingProtectionChange(val label: String) {
+    DISABLE_STRICT_BARRIER("Strict Unblock Barrier"),
+    DISABLE_ONE_SEC("One Sec Breath Intercept"),
+    DISABLE_NIGHT_MODE("Nighttime Detox")
+}
+
 data class SettingsUiState(
     val oneSecEnabled: Boolean = true,
     val microSessionMinutes: Int = 5,
@@ -125,5 +166,6 @@ data class SettingsUiState(
     val blockingMethod: String = "Strict",
     val strictUnblockProtection: Boolean = true,
     val isBatteryOptimizationIgnored: Boolean = true,
+    val pendingProtectionChange: PendingProtectionChange? = null,
     val isLoading: Boolean = true
 )

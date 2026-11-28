@@ -1,15 +1,12 @@
 package com.example.digitaldetox.presentation.viewmodel
 
-import android.content.ComponentName
 import android.content.Context
-import android.provider.Settings
-import android.text.TextUtils
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.digitaldetox.data.repository.AppRepository
 import com.example.digitaldetox.data.repository.SettingsRepository
 import com.example.digitaldetox.domain.model.App
-import com.example.digitaldetox.service.AppBlockingService
+import com.example.digitaldetox.util.AccessibilityHelper
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -55,13 +52,13 @@ class BlockedAppsViewModel @Inject constructor(
     }
 
     fun checkAccessibilityService() {
-        val enabled = isAccessibilityServiceEnabled(context)
+        val enabled = AccessibilityHelper.isAccessibilityServiceEnabled(context)
         _uiState.update { it.copy(isAccessibilityServiceEnabled = enabled) }
     }
 
     private fun loadApps() {
         viewModelScope.launch {
-            allApps = appRepository.getAllApps()
+            allApps = appRepository.getAllApps().sortedBy { it.label.lowercase() }
             _uiState.update { it.copy(isLoading = false) }
             applyFilter()
         }
@@ -90,7 +87,13 @@ class BlockedAppsViewModel @Inject constructor(
             matchesQuery && matchesFilter
         }
 
-        _uiState.update { it.copy(apps = filteredApps) }
+        _uiState.update {
+            it.copy(
+                apps = filteredApps,
+                totalAppsCount = allApps.size,
+                blockedAppsCount = allApps.count { app -> app.blockEnabled }
+            )
+        }
     }
 
     fun toggleAppBlocked(packageName: String, enabled: Boolean) {
@@ -102,7 +105,7 @@ class BlockedAppsViewModel @Inject constructor(
         } else {
             viewModelScope.launch {
                 appRepository.toggleAppBlocked(packageName, enabled)
-                allApps = appRepository.getAllApps()
+                allApps = appRepository.getAllApps().sortedBy { it.label.lowercase() }
                 applyFilter()
             }
         }
@@ -117,34 +120,16 @@ class BlockedAppsViewModel @Inject constructor(
         _uiState.update { it.copy(pendingUnblockApp = null) }
         viewModelScope.launch {
             appRepository.toggleAppBlocked(pending.packageName, false)
-            allApps = appRepository.getAllApps()
+            allApps = appRepository.getAllApps().sortedBy { it.label.lowercase() }
             applyFilter()
         }
-    }
-
-    fun isAccessibilityServiceEnabled(context: Context): Boolean {
-        val expectedComponentName = ComponentName(context, AppBlockingService::class.java)
-        val enabledServicesSetting = Settings.Secure.getString(
-            context.contentResolver,
-            Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
-        ) ?: return false
-
-        val colonSplitter = TextUtils.SimpleStringSplitter(':')
-        colonSplitter.setString(enabledServicesSetting)
-
-        while (colonSplitter.hasNext()) {
-            val componentNameString = colonSplitter.next()
-            val enabledComponent = ComponentName.unflattenFromString(componentNameString)
-            if (enabledComponent != null && enabledComponent == expectedComponentName) {
-                return true
-            }
-        }
-        return false
     }
 }
 
 data class BlockedAppsUiState(
     val apps: List<App> = emptyList(),
+    val totalAppsCount: Int = 0,
+    val blockedAppsCount: Int = 0,
     val searchQuery: String = "",
     val filterMode: FilterMode = FilterMode.ALL,
     val isLoading: Boolean = true,

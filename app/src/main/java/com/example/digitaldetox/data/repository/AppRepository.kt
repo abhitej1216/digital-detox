@@ -52,8 +52,16 @@ class AppRepository @Inject constructor(
         val currentAppsMap = currentApps.associateBy { it.packageName }
         
         val appEntities = installedApps.mapNotNull { appInfo ->
-            // Skip system apps
-            if ((appInfo.flags and ApplicationInfo.FLAG_SYSTEM) != 0) {
+            // Exclude Digital Detox itself and non-launchable background packages
+            if (appInfo.packageName == context.packageName) {
+                return@mapNotNull null
+            }
+            val isSystem = (appInfo.flags and ApplicationInfo.FLAG_SYSTEM) != 0
+            val isUpdatedSystem = (appInfo.flags and ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) != 0
+            if (isSystem && !isUpdatedSystem) {
+                return@mapNotNull null
+            }
+            if (pm.getLaunchIntentForPackage(appInfo.packageName) == null) {
                 return@mapNotNull null
             }
             val label = pm.getApplicationLabel(appInfo).toString()

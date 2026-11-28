@@ -1,12 +1,16 @@
 package com.example.digitaldetox.presentation.viewmodel
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.digitaldetox.data.dao.DailyUsageStatDao
 import com.example.digitaldetox.data.dao.FocusSessionDao
+import com.example.digitaldetox.data.repository.AppRepository
 import com.example.digitaldetox.data.repository.SettingsRepository
 import com.example.digitaldetox.data.repository.UsageStatsRepository
+import com.example.digitaldetox.util.AccessibilityHelper
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -20,7 +24,9 @@ class DashboardViewModel @Inject constructor(
     private val focusSessionDao: FocusSessionDao,
     private val dailyUsageStatDao: DailyUsageStatDao,
     private val usageStatsRepository: UsageStatsRepository,
-    private val settingsRepository: SettingsRepository
+    private val settingsRepository: SettingsRepository,
+    private val appRepository: AppRepository,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DashboardUiState())
@@ -33,6 +39,8 @@ class DashboardViewModel @Inject constructor(
     fun loadDashboardData() {
         viewModelScope.launch {
             val hasPermission = usageStatsRepository.hasUsageStatsPermission()
+            val isAccessibilityEnabled = AccessibilityHelper.isAccessibilityServiceEnabled(context)
+            val blockedAppsCount = appRepository.getBlockedApps().size
             val todayStart = getStartOfDay()
             val studyTime = focusSessionDao.getTotalFocusMinutes("Study", todayStart) ?: 0
             val workTime = focusSessionDao.getTotalFocusMinutes("Work", todayStart) ?: 0
@@ -60,9 +68,11 @@ class DashboardViewModel @Inject constructor(
             _uiState.update {
                 it.copy(
                     hasPermission = hasPermission,
+                    isAccessibilityEnabled = isAccessibilityEnabled,
+                    blockedAppsCount = blockedAppsCount,
                     studyTime = studyTime,
                     workTime = workTime,
-                    totalFocusTime = if (hasPermission && actualUsageMinutes > 0) actualUsageMinutes else focusTime,
+                    totalFocusTime = focusTime,
                     totalAppUsageTime = actualUsageMinutes,
                     goalProgress = goalProgress,
                     mindfulSavesCount = mindfulSavesCount,
@@ -89,6 +99,8 @@ data class DashboardUiState(
     val totalAppUsageTime: Int = 0,
     val goalProgress: Float = 0f,
     val mindfulSavesCount: Int = 0,
+    val blockedAppsCount: Int = 0,
     val hasPermission: Boolean = false,
+    val isAccessibilityEnabled: Boolean = false,
     val isLoading: Boolean = true
 )

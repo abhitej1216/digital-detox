@@ -1,5 +1,6 @@
 package com.example.digitaldetox.presentation.intervention
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -38,10 +39,15 @@ fun CooldownScreen(
     packageName: String,
     appLabel: String,
     isDailyLimit: Boolean,
+    microSessionMinutes: Int = 5,
     cooldownTotalMinutes: Int = 30,
     dailyLimit: Int = 5,
     onCloseToHome: () -> Unit
 ) {
+    BackHandler {
+        onCloseToHome()
+    }
+
     var remainingSeconds by remember(packageName) {
         mutableLongStateOf(MindfulInterventionManager.getRemainingCooldownSeconds(packageName))
     }
@@ -182,7 +188,7 @@ fun CooldownScreen(
                             text = if (isDailyLimit) {
                                 "You reached today's quota of $dailyLimit opens for $appLabel. Giving your brain a full break today will reset your impulse baseline."
                             } else {
-                                "Your intentional 5-minute micro-session finished. This mandatory cooldown allows your dopamine baseline to recover before checking again."
+                                "Your intentional $microSessionMinutes-minute micro-session finished. This mandatory cooldown allows your dopamine baseline to recover before checking again."
                             },
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,

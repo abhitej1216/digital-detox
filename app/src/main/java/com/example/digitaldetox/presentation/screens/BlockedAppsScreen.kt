@@ -31,16 +31,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.core.graphics.drawable.toBitmap
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
@@ -48,12 +45,12 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.example.digitaldetox.presentation.viewmodel.BlockedAppsViewModel
 import com.example.digitaldetox.presentation.viewmodel.FilterMode
-import com.example.digitaldetox.presentation.viewmodel.PendingUnblockApp
 import com.example.digitaldetox.ui.components.AnimatedSegmentedControl
 import com.example.digitaldetox.ui.components.CraftCard
-import com.example.digitaldetox.ui.components.CraftPillBadge
+import com.example.digitaldetox.ui.components.UnblockChallengeDialog
 import com.example.digitaldetox.ui.components.tactilePress
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -79,7 +76,10 @@ fun BlockedAppsScreen(
 
     uiState.pendingUnblockApp?.let { pendingApp ->
         UnblockChallengeDialog(
-            pendingApp = pendingApp,
+            targetKey = pendingApp,
+            title = "Unblock ${pendingApp.label}?",
+            subtitle = "Complete the 1-minute cooldown, two math checks, and manual pledge to remove this app's limit.",
+            confirmButtonText = "Confirm Unblock",
             onConfirm = { viewModel.confirmUnblockApp() },
             onDismiss = { viewModel.cancelUnblock() }
         )
@@ -238,8 +238,8 @@ fun BlockedAppsScreen(
                     onItemSelected = { viewModel.onFilterModeChanged(it) },
                     labelProvider = { mode ->
                         when (mode) {
-                            FilterMode.ALL -> "All Apps"
-                            FilterMode.BLOCKED_ONLY -> "Blocked Only"
+                            FilterMode.ALL -> "All Apps (${uiState.totalAppsCount})"
+                            FilterMode.BLOCKED_ONLY -> "Blocked (${uiState.blockedAppsCount})"
                         }
                     },
                     modifier = Modifier.fillMaxWidth()
@@ -279,11 +279,13 @@ fun BlockedAppsScreen(
                         contentPadding = PaddingValues(vertical = 6.dp)
                     ) {
                         items(uiState.apps, key = { it.packageName }) { app ->
-                            val icon = remember(app.packageName) {
-                                try {
-                                    context.packageManager.getApplicationIcon(app.packageName).toBitmap().asImageBitmap()
-                                } catch (_: Exception) {
-                                    null
+                            val icon by produceState<ImageBitmap?>(initialValue = null, key1 = app.packageName) {
+                                value = withContext(Dispatchers.IO) {
+                                    try {
+                                        context.packageManager.getApplicationIcon(app.packageName).toBitmap().asImageBitmap()
+                                    } catch (_: Exception) {
+                                        null
+                                    }
                                 }
                             }
 
@@ -301,9 +303,10 @@ fun BlockedAppsScreen(
                                         verticalAlignment = Alignment.CenterVertically,
                                         horizontalArrangement = Arrangement.spacedBy(14.dp)
                                     ) {
-                                        if (icon != null) {
+                                        val loadedIcon = icon
+                                        if (loadedIcon != null) {
                                             Image(
-                                                bitmap = icon,
+                                                bitmap = loadedIcon,
                                                 contentDescription = app.label,
                                                 modifier = Modifier
                                                     .size(44.dp)
@@ -362,177 +365,4 @@ fun BlockedAppsScreen(
             }
         }
     }
-}
-
-/**
- * Emil Kowalski-styled Unblock Challenge Modal with scale-in animation,
- * circular timer gauge, and tactile actions.
- */
-@Composable
-private fun UnblockChallengeDialog(
-    pendingApp: PendingUnblockApp,
-    onConfirm: () -> Unit,
-    onDismiss: () -> Unit
-) {
-    data class MathChallenge(val expression: String, val answer: Int)
-
-    val challenge = remember(pendingApp) {
-        when ((1..3).random()) {
-            1 -> {
-                val a = (13..25).random()
-                val b = (12..19).random()
-                MathChallenge("$a × $b = ?", a * b)
-            }
-            2 -> {
-                val a = (12..20).random()
-                val b = (6..14).random()
-                val c = (25..85).random()
-                MathChallenge("($a × $b) + $c = ?", (a * b) + c)
-            }
-            else -> {
-                val a = (150..450).random()
-                val b = (120..380).random()
-                val c = (60..190).random()
-                MathChallenge("$a + $b - $c = ?", a + b - c)
-            }
-        }
-    }
-
-    var countdown by remember(pendingApp) { mutableIntStateOf(30) }
-    var userAnswer by remember(pendingApp) { mutableStateOf("") }
-    val haptic = LocalHapticFeedback.current
-
-    LaunchedEffect(pendingApp) {
-        countdown = 30
-        while (countdown > 0) {
-            delay(1000L)
-            countdown--
-        }
-    }
-
-    val isAnswerCorrect = userAnswer.trim() == challenge.answer.toString()
-    val isConfirmEnabled = countdown == 0 && isAnswerCorrect
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        shape = RoundedCornerShape(24.dp),
-        containerColor = MaterialTheme.colorScheme.surface,
-        title = {
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(
-                    text = "Mindful Pause",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.sp
-                )
-                Text(
-                    text = "Unblock ${pendingApp.label}?",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-        },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                Text(
-                    text = "Pause for a moment. Is breaking your detox right now worth interrupting your mental clarity?",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                // Math Challenge Monospace Card
-                CraftCard(
-                    backgroundColor = MaterialTheme.colorScheme.surfaceVariant,
-                    shape = RoundedCornerShape(16.dp)
-                ) {
-                    Text(
-                        text = "SOLVE TO CONFIRM",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(
-                        text = challenge.expression,
-                        style = MaterialTheme.typography.headlineMedium.copy(
-                            fontFamily = FontFamily.Monospace,
-                            fontWeight = FontWeight.Bold
-                        ),
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                }
-
-                // Countdown Gauge
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier.size(36.dp)
-                    ) {
-                        CircularProgressIndicator(
-                            progress = { if (countdown > 0) countdown / 30f else 1f },
-                            modifier = Modifier.fillMaxSize(),
-                            strokeWidth = 3.dp,
-                            color = if (countdown > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
-                            trackColor = MaterialTheme.colorScheme.surfaceVariant,
-                            strokeCap = StrokeCap.Round
-                        )
-                        Text(
-                            text = if (countdown > 0) "$countdown" else "✓",
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-
-                    Text(
-                        text = if (countdown > 0) "Cool-down period: $countdown s" else "Cool-down passed",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = if (countdown > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-
-                OutlinedTextField(
-                    value = userAnswer,
-                    onValueChange = { userAnswer = it },
-                    label = { Text("Your answer") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    singleLine = true,
-                    shape = RoundedCornerShape(14.dp),
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = {
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                    onConfirm()
-                },
-                enabled = isConfirmEnabled,
-                shape = CircleShape,
-                modifier = Modifier.tactilePress(scale = 0.95f),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary
-                )
-            ) {
-                Text("Confirm Unblock", fontWeight = FontWeight.Bold)
-            }
-        },
-        dismissButton = {
-            TextButton(
-                onClick = onDismiss,
-                modifier = Modifier.tactilePress(scale = 0.95f)
-            ) {
-                Text(
-                    "Cancel",
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-    )
 }

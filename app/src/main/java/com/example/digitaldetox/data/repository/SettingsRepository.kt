@@ -31,6 +31,12 @@ class SettingsRepository @Inject constructor(
             value?.toBoolean() ?: defaultValue
         }
     }
+
+    fun getIntFlow(key: String, defaultValue: Int): Flow<Int> {
+        return settingsDao.getStringValueFlow(key).map { value ->
+            value?.toIntOrNull() ?: defaultValue
+        }
+    }
     
     suspend fun saveString(key: String, value: String) {
         settingsDao.insert(SettingsEntity(key, value))

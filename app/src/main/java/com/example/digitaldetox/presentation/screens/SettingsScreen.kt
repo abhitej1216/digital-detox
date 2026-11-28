@@ -42,6 +42,7 @@ import com.example.digitaldetox.presentation.viewmodel.SettingsViewModel
 import com.example.digitaldetox.ui.components.AnimatedSegmentedControl
 import com.example.digitaldetox.ui.components.CraftCard
 import com.example.digitaldetox.ui.components.CraftPillBadge
+import com.example.digitaldetox.ui.components.UnblockChallengeDialog
 import com.example.digitaldetox.ui.components.tactilePress
 import com.example.digitaldetox.util.BatteryOptimizationHelper
 
@@ -65,6 +66,17 @@ fun SettingsScreen(
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
         }
+    }
+
+    uiState.pendingProtectionChange?.let { pending ->
+        UnblockChallengeDialog(
+            targetKey = pending,
+            title = "Disable ${pending.label}?",
+            subtitle = "Lowering protection shields requires passing the 1-minute barrier, two math challenges, and a manual pledge.",
+            confirmButtonText = "Disable Shield",
+            onConfirm = { viewModel.confirmPendingProtectionChange() },
+            onDismiss = { viewModel.dismissPendingProtectionChange() }
+        )
     }
 
     Scaffold(
@@ -201,7 +213,7 @@ fun SettingsScreen(
                                 )
                                 Spacer(modifier = Modifier.height(2.dp))
                                 Text(
-                                    text = "Requires a math challenge when manually unblocking apps in Limits.",
+                                    text = "Requires a 60s wait, dual math locks, and a typed pledge to unblock apps or disable shields.",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )

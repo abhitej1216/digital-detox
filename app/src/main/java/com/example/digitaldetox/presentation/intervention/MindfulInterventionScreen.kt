@@ -3,6 +3,7 @@ package com.example.digitaldetox.presentation.intervention
 import android.content.Context
 import android.content.Intent
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
@@ -63,6 +64,16 @@ fun MindfulInterventionScreen(
 
     var microSessionMinutes by remember { mutableIntStateOf(5) }
     var cooldownMinutes by remember { mutableIntStateOf(30) }
+
+    BackHandler {
+        coroutineScope.launch {
+            if (packageName != "preview") {
+                val currentSaves = settingsRepository.getInt("mindful_saves_count", 0)
+                settingsRepository.saveInt("mindful_saves_count", currentSaves + 1)
+            }
+            onCloseToHome()
+        }
+    }
 
     LaunchedEffect(Unit) {
         microSessionMinutes = settingsRepository.getInt("micro_session_minutes", 5)
@@ -283,13 +294,15 @@ fun MindfulInterventionScreen(
                             onClick = {
                                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                 coroutineScope.launch {
-                                    val currentSaves = settingsRepository.getInt("mindful_saves_count", 0)
-                                    settingsRepository.saveInt("mindful_saves_count", currentSaves + 1)
-                                    Toast.makeText(
-                                        context,
-                                        "Mindful Save recorded! Distraction avoided.",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
+                                    if (packageName != "preview") {
+                                        val currentSaves = settingsRepository.getInt("mindful_saves_count", 0)
+                                        settingsRepository.saveInt("mindful_saves_count", currentSaves + 1)
+                                        Toast.makeText(
+                                            context,
+                                            "Mindful Save recorded! Distraction avoided.",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
                                     onCloseToHome()
                                 }
                             },
@@ -319,16 +332,18 @@ fun MindfulInterventionScreen(
                         OutlinedButton(
                             onClick = {
                                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                MindfulInterventionManager.startMicroSession(
-                                    packageName = packageName,
-                                    sessionMinutes = microSessionMinutes,
-                                    cooldownMinutes = cooldownMinutes
-                                )
-                                Toast.makeText(
-                                    context,
-                                    "$microSessionMinutes-min micro-session started ($cooldownMinutes-min cooldown after).",
-                                    Toast.LENGTH_SHORT
-                                ).show()
+                                if (packageName != "preview") {
+                                    MindfulInterventionManager.startMicroSession(
+                                        packageName = packageName,
+                                        sessionMinutes = microSessionMinutes,
+                                        cooldownMinutes = cooldownMinutes
+                                    )
+                                    Toast.makeText(
+                                        context,
+                                        "$microSessionMinutes-min micro-session started ($cooldownMinutes-min cooldown after).",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
                                 onLaunchApp()
                             },
                             shape = CircleShape,
@@ -356,8 +371,10 @@ fun MindfulInterventionScreen(
                     TextButton(
                         onClick = {
                             coroutineScope.launch {
-                                val currentSaves = settingsRepository.getInt("mindful_saves_count", 0)
-                                settingsRepository.saveInt("mindful_saves_count", currentSaves + 1)
+                                if (packageName != "preview") {
+                                    val currentSaves = settingsRepository.getInt("mindful_saves_count", 0)
+                                    settingsRepository.saveInt("mindful_saves_count", currentSaves + 1)
+                                }
                                 onCloseToHome()
                             }
                         },

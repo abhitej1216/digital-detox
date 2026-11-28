@@ -78,8 +78,8 @@ fun DashboardScreen(
                 },
                 actions = {
                     CraftPillBadge(
-                        text = "Protection Active",
-                        indicatorColor = MaterialTheme.colorScheme.primary,
+                        text = if (uiState.isAccessibilityEnabled) "Protection Active" else "Protection Off",
+                        indicatorColor = if (uiState.isAccessibilityEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
                         modifier = Modifier.padding(end = 16.dp)
                     )
                 },
@@ -110,6 +110,62 @@ fun DashboardScreen(
                     .padding(horizontal = 20.dp, vertical = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+                // Accessibility Blocking Engine Disabled Banner
+                if (!uiState.isAccessibilityEnabled) {
+                    CraftCard(
+                        backgroundColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.25f),
+                        borderColor = MaterialTheme.colorScheme.error.copy(alpha = 0.35f)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.error.copy(alpha = 0.15f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Info,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.error,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "App Blocking Paused",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Text(
+                                    text = "Enable Accessibility Service so Digital Detox can guard ${uiState.blockedAppsCount} blocked apps.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(14.dp))
+                        Button(
+                            onClick = {
+                                context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .tactilePress(scale = 0.97f),
+                            shape = CircleShape,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.error
+                            )
+                        ) {
+                            Text("Enable Accessibility Service", fontWeight = FontWeight.SemiBold)
+                        }
+                    }
+                }
+
                 // Permission Card (Action Required - Emil Kowalski style frosted card)
                 if (!uiState.hasPermission) {
                     CraftCard(
@@ -205,6 +261,13 @@ fun DashboardScreen(
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
+                            if (uiState.hasPermission) {
+                                Text(
+                                    text = "${uiState.totalFocusTime}m focus logged today",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                         }
 
                         // Circular Progress Ring Indicator
@@ -358,8 +421,8 @@ fun DashboardScreen(
                         }
 
                         CraftPillBadge(
-                            text = "Active",
-                            indicatorColor = Color(0xFFF59E0B),
+                            text = if (uiState.isAccessibilityEnabled) "${uiState.blockedAppsCount} Guarded" else "Inactive",
+                            indicatorColor = if (uiState.isAccessibilityEnabled) Color(0xFFF59E0B) else MaterialTheme.colorScheme.outline,
                             containerColor = Color(0xFFF59E0B).copy(alpha = 0.15f)
                         )
                     }

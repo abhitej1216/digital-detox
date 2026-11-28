@@ -1,7 +1,9 @@
 package com.example.digitaldetox.service
 
 import android.accessibilityservice.AccessibilityService
+import android.content.Intent
 import android.content.pm.ApplicationInfo
+import android.content.pm.PackageManager
 import android.view.accessibility.AccessibilityEvent
 import android.widget.Toast
 import com.example.digitaldetox.data.repository.AppRepository
@@ -44,6 +46,7 @@ class AppBlockingService : AccessibilityService() {
 
     override fun onServiceConnected() {
         super.onServiceConnected()
+        MindfulInterventionManager.init(applicationContext)
         serviceScope.launch {
             val initialBlockedApps = appRepository.getBlockedApps()
             blockedPackageNames = initialBlockedApps.map { it.packageName }.toSet()
@@ -63,9 +66,19 @@ class AppBlockingService : AccessibilityService() {
             }
         }
         serviceScope.launch {
-            dailyOpenLimit = settingsRepository.getInt("daily_open_limit", 5)
-            microSessionMinutes = settingsRepository.getInt("micro_session_minutes", 5)
-            cooldownMinutes = settingsRepository.getInt("cooldown_minutes", 30)
+            settingsRepository.getIntFlow("daily_open_limit", 5).collect { limit ->
+                dailyOpenLimit = limit
+            }
+        }
+        serviceScope.launch {
+            settingsRepository.getIntFlow("micro_session_minutes", 5).collect { mins ->
+                microSessionMinutes = mins
+            }
+        }
+        serviceScope.launch {
+            settingsRepository.getIntFlow("cooldown_minutes", 30).collect { mins ->
+                cooldownMinutes = mins
+            }
         }
     }
 
@@ -88,9 +101,9 @@ class AppBlockingService : AccessibilityService() {
 
             val isUserBlocked = blockedPackageNames.contains(packageName)
             val isNightModeActive = isNightModeEnabled && isNightTime
-            val isNonSystemApp = !isSystemApp(packageName)
+            val isBlockableNightApp = !isSystemApp(packageName) && !isHomeLauncher(packageName)
 
-            if (isUserBlocked || (isNightModeActive && isNonSystemApp)) {
+            if (isUserBlocked || (isNightModeActive && isBlockableNightApp)) {
                 val appLabel = try {
                     val appInfo = packageManager.getApplicationInfo(packageName, 0)
                     packageManager.getApplicationLabel(appInfo).toString()
@@ -144,7 +157,7 @@ class AppBlockingService : AccessibilityService() {
                         } else {
                             // Standard abrupt block
                             performGlobalAction(GLOBAL_ACTION_HOME)
-                            val toastMessage = if (isNightModeActive && isNonSystemApp && !isUserBlocked) {
+                            val toastMessage = if (isNightModeActive && isBlockableNightApp && !isUserBlocked) {
                                 "$appLabel is blocked during Nighttime Detox!"
                             } else {
                                 "$appLabel is currently blocked by Digital Detox!"
@@ -160,9 +173,9 @@ class AppBlockingService : AccessibilityService() {
     private fun watchSessionExpiration(packageName: String, appLabel: String) {
         sessionWatcherJob?.cancel()
         sessionWatcherJob = serviceScope.launch {
-            val remainingSecs = MindfulInterventionManager.getRemainingSessionSeconds(packageName)
-            if (remainingSecs > 0) {
-                delay(remainingSecs * 1000L)
+            val remainingMs = MindfulInterventionManager.getRemainingSessionMillis(packageName)
+            if (remainingMs > 0) {
+                delay(remainingMs)
             }
             // If the user is still in the app when the session expires:
             if (currentForegroundPackage == packageName) {
@@ -174,6 +187,16 @@ class AppBlockingService : AccessibilityService() {
                     isDailyLimit = false
                 )
             }
+        }
+    }
+
+    private fun isHomeLauncher(packageName: String): Boolean {
+        return try {
+            val homeIntent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
+            val resolveInfo = packageManager.resolveActivity(homeIntent, PackageManager.MATCH_DEFAULT_ONLY)
+            resolveInfo?.activityInfo?.packageName == packageName
+        } catch (e: Exception) {
+            false
         }
     }
 
