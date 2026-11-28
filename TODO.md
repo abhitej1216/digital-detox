@@ -43,4 +43,7 @@ Prioritised backlog for the MVP.
 - [x] Real App Icons display in Blocked Apps list
 - [x] Search & Filter (All / Blocked Only) in Blocked Apps
 - [x] Daily Goal Progress Bar on Dashboard
-- [x] Strict Unblock Protection (30s Mandatory Delay + Advanced Math Challenge)
+- [x] Strict Unblock Protection (60s Foreground-Only Delay + Dual Math Lock + Anti-Paste Pledge)
+- [x] Settings Shield Protection (Challenge Required to Disable Shields)
+- [x] Persistent Micro-Sessions, Cooldowns & Daily Quotas
+- [x] Drift-Free Focus Timer & Live Accessibility Status on Dashboard
